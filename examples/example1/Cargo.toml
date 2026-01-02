@@ -1,0 +1,17 @@
+[package]
+name = "example1"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ctor = "0.6.3"
+option_chain_tool = { path = "../../" }
+
+tracing = "0.1"
+tracing-core = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["json"] }
+
+tokio = { version = "1.38", features = ["full"] }
+
+[lints]
+workspace = true
