@@ -23,9 +23,9 @@ pub fn opt(input: TokenStream) -> TokenStream {
     // );
 
     // dbg!(resp.to_string());
-    let aa =
-        TokenStream::from_str("test_struct.value?Ok.my.vec?.my_val.get(0)?.some_field?.ok").unwrap();
-    dbg!(aa.clone());
+    let aa = TokenStream::from_str("test_struct.value?Ok.my.vec?.my_val.get(0)?.some_field?.ok()?Err")
+        .unwrap();
+    // dbg!(aa.clone());
     let resp = split_on_optional_variants(aa);
     for r in resp.iter() {
         dbg!(
@@ -189,23 +189,20 @@ pub(crate) struct OptionalSegment {
 }
 
 pub(crate) fn split_on_optional_variants(input: TokenStream) -> Vec<OptionalSegment> {
+    let input_tokens: Vec<TokenTree> = input.clone().into_iter().collect();
     let mut iter = input.into_iter().peekable();
 
     let mut result: Vec<OptionalSegment> = Vec::new();
     let mut current: Vec<TokenTree> = Vec::new();
     let mut current_variant = OptionalVariant::Root;
-    let mut last_token = TokenTree::Punct(Punct::new(';', Spacing::Alone)); // dummy init
     while let Some(tt) = iter.next().as_ref() {
-        last_token = tt.clone();
         match &tt {
             TokenTree::Punct(q) if q.as_char() == '?' => {
                 // Try to detect ?. / ?Ok. / ?Err.
                 let variant = match iter.peek() {
                     Some(TokenTree::Punct(dot)) if dot.as_char() == '.' => {
-                        if let Some(ttt) = &iter.next() {
-                            // consume '.'
-                            last_token = ttt.clone();
-                        }
+                        iter.next(); // consume '.'                            // consume '.'
+
                         Some(OptionalVariant::Option)
                     }
 
@@ -220,17 +217,10 @@ pub(crate) fn split_on_optional_variants(input: TokenStream) -> Vec<OptionalSegm
                         };
 
                         // consume Ident
-                        if let Some(ttt) = &iter.next() {
-                            // consume '.'
-                            last_token = ttt.clone();
-                        }
+                        iter.next();
 
                         // require trailing '.'
-                        let current_tt = iter.next();
-                        if let Some(t) = current_tt.as_ref() {
-                            last_token = t.clone();
-                        }
-                        match current_tt.as_ref() {
+                        match &iter.next() {
                             Some(TokenTree::Punct(dot)) if dot.as_char() == '.' => Some(v),
                             other => {
                                 // rollback-ish: treat as normal tokens
@@ -280,8 +270,11 @@ pub(crate) fn split_on_optional_variants(input: TokenStream) -> Vec<OptionalSegm
     }
 
     // dbg!(last_token.to_string());
+    if input_tokens.last().is_none() {
+        return result;
+    }
 
-    match last_token {
+    match input_tokens.last().unwrap() {
         TokenTree::Punct(p) if p.as_char() == '?' => {
             result.push(OptionalSegment {
                 variant: OptionalVariant::Option,
@@ -306,9 +299,5 @@ pub(crate) fn split_on_optional_variants(input: TokenStream) -> Vec<OptionalSegm
             // unreachable!("Unexpected last token: {}", last_token.to_string());
         }
     }
-
-    // if result[result.len() - 1].tokens.len() == 0 {
-    //     result.pop();
-    // }
     result
 }
