@@ -49,7 +49,7 @@ fn main() {
 
     let a = opt!(user.age?);
 
-    let a = opt!(user.profile?.address?.city?);
+    let a: Option<&String> = opt!(user.profile?.address?.city?);
     let a = opt!(user.profile?.address?.street);
     let a = opt!(user.profile?.address?.get_city()?);
     let a = opt!(user.profile?.address?.some_field?Err);

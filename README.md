@@ -20,11 +20,19 @@ This becomes increasingly unreadable as nesting increases.
 
 2. **Manual unwrapping with pattern matching**:
 ```rust
-let value = if let Some(v1) = test_struct.value {
-    if let Some(v2) = v1.value {
-        v2.value
-    } else { None }
-} else { None };
+if let Some(____v) = &test_struct.value {
+    if let Some(____v) = &____v.value {
+        if let (____v) = &____v.value {
+            Some(____v)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+} else {
+    None
+}
 ```
 Even more verbose and error-prone.
 
@@ -55,7 +63,7 @@ Clean, readable, and efficient - without requiring your function to return `Opti
 ## Features
 
 - 🪶 **Lightweight**: Just a single `macro_rules!`, zero dependencies (not even the standard library!)
-- 🚀 **Zero overhead**: Compiles down to the same code as manual `and_then` chains
+- 🚀 **Zero overhead**: Compiles down to the same code as manual `if let Some(...) = ...` chains
 - 🎯 **Intuitive**: Uses Rust's familiar `?` operator syntax
 - 🔒 **Type-safe**: Full compile-time type checking
 - 📦 **Works everywhere**: Use in functions returning `()`, concrete types, or anything else
@@ -66,7 +74,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-option_chain_macro = "0.1"
+option_chain_macro = "0.10"
 ```
 
 ## Usage
@@ -252,14 +260,26 @@ let city = opt!(user.profile?.address?.city?);
 
 ## How It Works
 
-The `opt!` macro transforms your code at compile time, converting the intuitive `?` syntax into efficient `and_then` chains. There's no runtime overhead - it's purely a syntactic convenience.
+The `opt!` macro transforms your code at compile time, converting the intuitive `?` syntax into efficient `if let Some(...) = ...` chains. There's no runtime overhead - it's purely a syntactic convenience.
 
 ```rust
 // What you write:
-opt!(user.profile?.address?.city?)
+let a: Option<&String> = opt!(user.profile?.address?.city?);
 
 // What the compiler sees (roughly):
-user.profile.and_then(|x| x.address).and_then(|x| x.city)
+let a: Option<&String> = if let Some(____v) = &user.profile {
+    if let Some(____v) = &____v.address {
+        if let Some(____v) = &____v.city {
+            Some(____v)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+} else {
+    None
+};
 ```
 
 ## When to Use
