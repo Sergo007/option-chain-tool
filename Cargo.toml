@@ -2,7 +2,7 @@
 members = ["examples/*"]
 
 [package]
-name = "option_chain_tool"
+name = "option-chain-tool"
 version = "0.10.0"
 edition = "2021"
 

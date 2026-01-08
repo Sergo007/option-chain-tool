@@ -1,11 +1,11 @@
 [package]
 name = "example1"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 ctor = "0.6.3"
-option_chain_tool = { path = "../../" }
+option-chain-tool = { path = "../../" }
 
 tracing = "0.1"
 tracing-core = { version = "0.1" }

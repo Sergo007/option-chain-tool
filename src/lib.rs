@@ -1,5 +1,4 @@
 use proc_macro::{Delimiter, Group, Ident, Punct, Spacing, TokenStream, TokenTree};
-use std::str::FromStr;
 
 /// A procedural macro that splits an optional chaining expression into its segments.
 ///
@@ -148,7 +147,7 @@ fn if_let(
     ))]);
     ts.extend([TokenTree::Group(Group::new(
         Delimiter::Brace,
-        TokenStream::from_str("None").unwrap(),
+        TokenTree::Ident(Ident::new("None", proc_macro::Span::call_site())).into(),
     ))]);
     ts
 }

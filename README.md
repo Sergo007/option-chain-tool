@@ -22,11 +22,7 @@ This becomes increasingly unreadable as nesting increases.
 ```rust
 if let Some(____v) = &test_struct.value {
     if let Some(____v) = &____v.value {
-        if let (____v) = &____v.value {
-            Some(____v)
-        } else {
-            None
-        }
+        Some(&____v.value)
     } else {
         None
     }
@@ -62,7 +58,7 @@ Clean, readable, and efficient - without requiring your function to return `Opti
 
 ## Features
 
-- 🪶 **Lightweight**: Just a single `macro_rules!`, zero dependencies.
+- 🪶 **Lightweight**: Just a use native rust TokenStream, zero dependencies.
 - 🚀 **Zero overhead**: Compiles down to the same code as manual `if let Some(...) = ...` chains.
 - 🎯 **Intuitive**: Uses Rust's familiar `?` operator syntax.
 - 🔒 **Type-safe**: Full compile-time type checking.
@@ -74,7 +70,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-option_chain_macro = "0.10"
+option-chain-tool = "0.10"
 ```
 
 ## Usage
