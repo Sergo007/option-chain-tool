@@ -1,8 +1,122 @@
 use proc_macro::{Delimiter, Group, Ident, Punct, Spacing, TokenStream, TokenTree};
 
-/// A procedural macro that splits an optional chaining expression into its segments.
+/// A procedural macro for safe optional chaining in Rust.
 ///
-/// foo!(test_struct.value?Ok.my.vec?.my_val.get(0)?.some_field?.ok()?Err)
+/// The `opt!` macro provides a concise syntax for chaining operations on `Option` and `Result` types,
+/// similar to optional chaining in languages like TypeScript or Swift. It automatically handles
+/// unwrapping and propagates `None` values through the chain.
+///
+/// # Syntax
+///
+/// The macro supports several operators for different use cases:
+///
+/// - `?.` - Unwraps an `Option`, returns `None` if the value is `None`
+/// - `?Ok.` - Unwraps a `Result` to its `Ok` variant, returns `None` if `Err`
+/// - `?Err.` - Unwraps a `Result` to its `Err` variant, returns `None` if `Ok`
+/// - `.field` - Access a field without unwrapping (for required fields)
+///
+/// The macro returns `Some(value)` if all operations succeed, or `None` if any step fails.
+///
+/// # Examples
+///
+/// ## Basic Option chaining
+///
+/// ```ignore
+/// use option_chain_tool::opt;
+///
+/// struct User {
+///     profile: Option<Profile>,
+/// }
+///
+/// struct Profile {
+///     address: Option<Address>,
+/// }
+///
+/// struct Address {
+///     city: Option<String>,
+/// }
+///
+/// let user = User {
+///     profile: Some(Profile {
+///         address: Some(Address {
+///             city: Some("New York".to_string()),
+///         }),
+///     }),
+/// };
+///
+/// // Instead of: user.profile.as_ref().and_then(|p| p.address.as_ref()).and_then(|a| a.city.as_ref())
+/// let city: Option<&String> = opt!(user.profile?.address?.city?);
+/// assert_eq!(city, Some(&"New York".to_string()));
+/// ```
+///
+/// ## Chaining with method calls
+///
+/// ```ignore
+/// use option_chain_tool::opt;
+///
+/// impl Address {
+///     fn get_city(&self) -> Option<&String> {
+///         self.city.as_ref()
+///     }
+/// }
+///
+/// let city: Option<&String> = opt!(user.profile?.address?.get_city()?);
+/// ```
+///
+/// ## Accessing required fields
+///
+/// ```ignore
+/// use option_chain_tool::opt;
+///
+/// struct Address {
+///     city: Option<String>,
+///     street: String, // Required field
+/// }
+///
+/// // Access a required field in the chain (no ? after street)
+/// let street: Option<&String> = opt!(user.profile?.address?.street);
+/// ```
+///
+/// ## Working with Result types
+///
+/// ```ignore
+/// use option_chain_tool::opt;
+///
+/// struct Address {
+///     validation: Result<String, String>,
+/// }
+///
+/// // Extract the Ok variant
+/// let ok_value: Option<&String> = opt!(user.profile?.address?.validation?Ok);
+///
+/// // Extract the Err variant
+/// let err_value: Option<&String> = opt!(user.profile?.address?.validation?Err);
+/// ```
+///
+/// ## Complex chaining
+///
+/// ```ignore
+/// use option_chain_tool::opt;
+///
+/// // Combine multiple patterns in a single chain
+/// let value: Option<&String> = opt!(
+///     user
+///         .profile?        // Unwrap Option<Profile>
+///         .address?        // Unwrap Option<Address>
+///         .street          // Access required field
+///         .validation?Ok   // Unwrap Result to Ok variant
+/// );
+/// ```
+///
+/// # Returns
+///
+/// - `Some(value)` if all operations in the chain succeed
+/// - `None` if any operation in the chain returns `None` or encounters an unwrappable value
+///
+/// # Notes
+///
+/// The macro generates nested `if let` expressions that short-circuit on `None`, providing
+/// efficient and safe optional chaining without runtime panics.
 #[proc_macro]
 pub fn opt(input: TokenStream) -> TokenStream {
     let resp = split_on_optional_variants(input);
