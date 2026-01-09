@@ -179,6 +179,25 @@ pub fn opt(input: TokenStream) -> TokenStream {
     result
 }
 
+/// Wraps a token stream in a `Some(...)` expression.
+///
+/// This helper function takes a token stream and wraps it in a `Some` constructor,
+/// which is used to return successful values in the optional chaining.
+///
+/// # Arguments
+///
+/// * `body` - The token stream to wrap inside `Some`
+///
+/// # Returns
+///
+/// A token stream representing `Some(body)`
+///
+/// # Example
+///
+/// ```ignore
+/// // Input: ____v
+/// // Output: Some(____v)
+/// ```
 fn some_wrapper(body: TokenStream) -> TokenStream {
     let mut ts = TokenStream::new();
     ts.extend([TokenTree::Ident(Ident::new(
@@ -189,6 +208,26 @@ fn some_wrapper(body: TokenStream) -> TokenStream {
     ts
 }
 
+/// Checks if a sequence of tokens ends with a function call.
+///
+/// This function examines the last token in a slice to determine if it represents
+/// a function call, which is identified by a closing parenthesis group.
+///
+/// # Arguments
+///
+/// * `tokens` - A slice of `TokenTree` to examine
+///
+/// # Returns
+///
+/// `true` if the last token is a group with parenthesis delimiter (indicating a function call),
+/// `false` otherwise
+///
+/// # Example
+///
+/// ```ignore
+/// // Returns true for: foo.bar()
+/// // Returns false for: foo.bar
+/// ```
 fn ends_with_fn_call(tokens: &[TokenTree]) -> bool {
     let last = match tokens.last() {
         Some(tt) => tt,
@@ -204,6 +243,33 @@ fn ends_with_fn_call(tokens: &[TokenTree]) -> bool {
     false
 }
 
+/// Generates an `if let` expression for pattern matching in the optional chain.
+///
+/// This function constructs an `if let` expression that attempts to unwrap a value
+/// according to the specified variant (`Some`, `Ok`, or `Err`). If the pattern matches,
+/// the body is executed; otherwise, `None` is returned.
+///
+/// # Arguments
+///
+/// * `variant` - The type of unwrapping to perform (Option, Ok, Err, Required, or Root)
+/// * `after_eq` - Token stream representing the expression to be matched
+/// * `body` - Token stream representing the code to execute if the pattern matches
+/// * `is_add_amp` - Whether to add a reference (`&`) before the expression being matched
+///
+/// # Returns
+///
+/// A token stream representing the complete `if let` expression with an `else` clause
+/// that returns `None`
+///
+/// # Panics
+///
+/// Panics if called with `OptionalVariant::Root`
+///
+/// # Example
+///
+/// ```ignore
+/// // Generates: if let Some(____v) = &expr { body } else { None }
+/// ```
 fn if_let(
     variant: OptionalVariant,
     after_eq: TokenStream,
@@ -266,22 +332,62 @@ fn if_let(
     ts
 }
 
+/// Represents the type of optional chaining operation at each segment.
+///
+/// This enum identifies how each segment in the optional chain should be unwrapped
+/// or accessed, enabling the macro to generate the appropriate pattern matching code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum OptionalVariant {
-    Root,     // first segment (no ?)
-    Option,   // ?.
-    Ok,       // ?Ok.
-    Err,      // ?Err.
-    Required, // no ?
+enum OptionalVariant {
+    /// First segment of the chain (no unwrapping operator)
+    Root,
+    /// Unwrap an `Option` using `?.` operator
+    Option,
+    /// Unwrap a `Result` to its `Ok` variant using `?Ok.` operator
+    Ok,
+    /// Unwrap a `Result` to its `Err` variant using `?Err.` operator
+    Err,
+    /// Access a field directly without unwrapping (no `?` operator)
+    Required,
 }
 
+/// Represents a single segment in the optional chaining expression.
+///
+/// Each segment contains the tokens that make up that part of the chain,
+/// along with the variant indicating how it should be unwrapped.
 #[derive(Debug, Clone)]
-pub(crate) struct OptionalSegment {
+struct OptionalSegment {
+    /// The type of unwrapping operation for this segment
     pub variant: OptionalVariant,
+    /// The token trees that make up this segment's expression
     pub tokens: Vec<TokenTree>,
 }
 
-pub(crate) fn split_on_optional_variants(input: TokenStream) -> Vec<OptionalSegment> {
+/// Parses the input token stream and splits it into segments based on optional chaining operators.
+///
+/// This function analyzes the input token stream to identify optional chaining operators
+/// (`?.`, `?Ok.`, `?Err.`) and splits the expression into segments, each with its corresponding
+/// variant type. The segments are then used to generate the nested `if let` expressions.
+///
+/// # Arguments
+///
+/// * `input` - The input token stream to parse
+///
+/// # Returns
+///
+/// A vector of `OptionalSegment` structs, where each segment represents a portion of the
+/// chaining expression along with its unwrapping variant
+///
+/// # Example
+///
+/// ```ignore
+/// // Input: user.profile?.address?.city?
+/// // Output: [
+/// //   OptionalSegment { variant: Option, tokens: [user, .profile] },
+/// //   OptionalSegment { variant: Option, tokens: [address] },
+/// //   OptionalSegment { variant: Option, tokens: [city] }
+/// // ]
+/// ```
+fn split_on_optional_variants(input: TokenStream) -> Vec<OptionalSegment> {
     let input_tokens: Vec<TokenTree> = input.clone().into_iter().collect();
     let mut iter = input.into_iter().peekable();
 
