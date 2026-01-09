@@ -1,4 +1,5 @@
 # option-chain-tool
+[![Latest Version](https://img.shields.io/crates/v/option-chain-tool.svg)](https://crates.io/crates/option-chain-tool)
 
 A Rust macro that brings JavaScript-like optional chaining to Rust, allowing you to use the `?` operator in any context - even in functions that don't return `Option` or `Result`.
 
